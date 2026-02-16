@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Tasks | Task Management System</title>
+    <style>
+        * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f4f6f8;
+}
+
+/* Top Bar */
+.topbar {
+    background: #1e3c72;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logout {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Layout */
+.dashboard {
+    display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    background: #2a5298;
+    min-height: 100vh;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 20px;
+}
+
+.sidebar li {
+    padding: 15px;
+    color: white;
+}
+
+.sidebar li a {
+    color: white;
+    text-decoration: none;
+}
+
+.sidebar li:hover,
+.sidebar .active {
+    background: rgba(255,255,255,0.2);
+}
+
+/* Content */
+.content {
+    flex: 1;
+    padding: 30px;
+}
+
+.content h2 {
+    margin-bottom: 20px;
+}
+
+/* Table */
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+}
+
+th {
+    background: #1e3c72;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f2f2f2;
+}
+
+/* Status */
+.pending {
+    color: orange;
+    font-weight: bold;
+}
+
+.completed {
+    color: green;
+    font-weight: bold;
+}
+
+/* Buttons */
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.edit {
+    background: #1e3c72;
+}
+
+.delete {
+    background: #c0392b;
+}
+
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <header class="topbar">
+        <h1>Task Management System</h1>
+        <a href="#" id="logout" class="logout">Logout</a>
+    </header>
+
+    <div class="dashboard">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li class="active">My Tasks</li>
+                <li><a href="add-task.html">Add Task</a></li>
+                <li><a href="complete.html">Completed Tasks</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <h2>My Task List</h2>
+
+            <table id="tasksTable">
+                <tr>
+                    <th>#</th>
+                    <th>Task Name</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th>Action</th>
+                </tr>
+            </table>
+        </main>
+
+    </div>
+    <script>
+async function ensureSession(){
+    try{
+        const res = await fetch("api/me.php",{credentials:"include"});
+        const data = await res.json();
+        if(!data.ok){ window.location.href = "login.html"; return null; }
+        return data.user;
+    }catch(e){
+        window.location.href = "login.html";
+        return null;
+    }
+}
+function renderRows(tasks){
+    const table = document.getElementById("tasksTable");
+    while(table.rows.length > 1){ table.deleteRow(1); }
+    tasks.forEach((t,i)=>{
+        const tr = document.createElement("tr");
+        tr.dataset.id = t.id;
+        const c0 = document.createElement("td"); c0.textContent = String(i+1);
+        const c1 = document.createElement("td"); c1.textContent = t.name;
+        const c2 = document.createElement("td"); c2.textContent = t.status; c2.className = String(t.status).toLowerCase()==="completed" ? "completed" : "pending";
+        const c3 = document.createElement("td"); c3.textContent = t.priority || "";
+        const c4 = document.createElement("td"); c4.textContent = t.due_date || "";
+        const c5 = document.createElement("td");
+        const eb = document.createElement("button"); eb.className="btn edit"; eb.textContent="Edit"; eb.onclick=()=>editTask(tr);
+        const db = document.createElement("button"); db.className="btn delete"; db.textContent="Delete"; db.onclick=()=>deleteTask(tr);
+        c5.appendChild(eb); c5.appendChild(db);
+        tr.appendChild(c0); tr.appendChild(c1); tr.appendChild(c2); tr.appendChild(c3); tr.appendChild(c4); tr.appendChild(c5);
+        table.appendChild(tr);
+    });
+}
+async function loadTasks(){
+    const user = await ensureSession();
+    if(!user) return;
+    try{
+        const res = await fetch("api/tasks.php",{credentials:"include"});
+        const data = await res.json();
+        if(data.ok){ renderRows(data.tasks); }
+    }catch(e){}
+}
+async function deleteTask(row){
+    if(!confirm("Delete this task?")) return;
+    const id = row.dataset.id;
+    try{
+        const res = await fetch("api/tasks.php?id="+encodeURIComponent(id),{method:"DELETE",credentials:"include"});
+        const data = await res.json();
+        if(data.ok){ row.remove(); }
+    }catch(e){}
+}
+async function editTask(row){
+    const cells = row.getElementsByTagName("td");
+    const id = row.dataset.id;
+    const taskName = prompt("Edit Task Name:", cells[1].innerText);
+    const status = prompt("Edit Status (Pending or Completed):", cells[2].innerText);
+    const priority = prompt("Edit Priority (High, Medium, Low):", cells[3].innerText);
+    const dueDate = prompt("Edit Due Date (YYYY-MM-DD):", cells[4].innerText);
+    if(!(taskName && status && priority)) return;
+    const payload = {id: Number(id), name: taskName, status, priority, due_date: dueDate || null};
+    try{
+        const res = await fetch("api/tasks.php",{method:"PUT", body: JSON.stringify(payload), credentials:"include"});
+        const data = await res.json();
+        if(data.ok){
+            cells[1].innerText = data.task.name;
+            cells[2].innerText = data.task.status;
+            cells[2].className = String(data.task.status).toLowerCase()==="completed" ? "completed" : "pending";
+            cells[3].innerText = data.task.priority || "";
+            cells[4].innerText = data.task.due_date || "";
+        }
+    }catch(e){}
+}
+document.getElementById("logout").addEventListener("click", async function(e){
+    e.preventDefault();
+    try{ await fetch("api/logout.php",{credentials:"include"});}catch(e){}
+    window.location.href = "login.html";
+});
+loadTasks();
+    </script>
+
+</body>
+</html>

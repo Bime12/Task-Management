@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login | Task Management System</title>
+    <link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+    <div class="login-container">
+        <h1>Task Management System</h1>
+        <h2>Login</h2>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" name="email" id="email" placeholder="Enter your email" required>
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" name="password" id="password" placeholder="Enter your password" required>
+            </div>
+
+            <button type="submit">Login</button>
+
+            <p class="register-link">
+                Don't have an account?
+                <a href="registration.html">Register</a>
+            </p>
+        </form>
+    </div>
+    <script>
+const form = document.getElementById("loginForm");
+form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    try{
+        const body = new URLSearchParams();
+        body.append("email", email);
+        body.append("password", password);
+        const res = await fetch("api/login.php", {method:"POST", body, credentials:"include"});
+        const data = await res.json();
+        if(!data.ok){
+            alert("Login failed");
+            return;
+        }
+        window.location.href = "dashboard.html";
+    }catch(err){
+        alert("Network error");
+    }
+});
+</script>
+
+
+</body>
+</html>

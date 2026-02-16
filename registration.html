@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register | Task Management System</title>
+    <link rel="stylesheet" href="registration.css">
+</head>
+<body>
+
+    <div class="register-container">
+        <h1>Task Management System</h1>
+        <h2>Create Account</h2>
+
+        <form id="registerForm">
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" name="name" id="name" placeholder="Enter your full name" required>
+            </div>
+
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" name="email" id="email" placeholder="Enter your email" required>
+            </div>
+
+            <div class="input-group">
+                <label>Password</label>
+                <input type="password" name="password" id="password" placeholder="Create a password" required>
+            </div>
+
+            <div class="input-group">
+                <label>Confirm Password</label>
+                <input type="password" id="confirm" placeholder="Confirm your password" required>
+            </div>
+
+            <button type="submit">Register</button>
+
+            <p class="login-link">
+                Already have an account?
+                <a href="login.html">Login</a>
+            </p>
+        </form>
+    </div>
+    <script>
+const rform = document.getElementById("registerForm");
+rform.addEventListener("submit", async function(e){
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const confirm = document.getElementById("confirm").value;
+    if(password !== confirm){
+        alert("Passwords do not match");
+        return;
+    }
+    try{
+        const body = new URLSearchParams();
+        body.append("name", name);
+        body.append("email", email);
+        body.append("password", password);
+        const res = await fetch("api/register.php",{method:"POST", body, credentials:"include"});
+        const data = await res.json();
+        if(!data.ok){
+            if(data.error === "email_exists"){ alert("Email already registered"); return; }
+            alert("Registration failed");
+            return;
+        }
+        window.location.href = "login.html";
+    }catch(err){
+        alert("Network error");
+    }
+});
+    </script>
+
+</body>
+</html>

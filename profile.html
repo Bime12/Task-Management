@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile | Task Management System</title>
+    <style>
+        /* Profile Card */
+.profile-card {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: 400px;
+}
+
+.profile-card p {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.profile-card button {
+    padding: 10px 20px;
+    background: #1e3c72;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.profile-card button:hover {
+    background: #16325c;
+}
+
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <h1>Task Management System</h1>
+    <a href="#" id="logout" class="logout">Logout</a>
+</header>
+
+<div class="dashboard">
+
+    <aside class="sidebar">
+        <ul>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="tasks.html">My Tasks</a></li>
+            <li><a href="add-task.html">Add Task</a></li>
+            <li><a href="complete.html">Completed Tasks</a></li>
+            <li class="active"><a href="profile.html">Profile</a></li>
+        </ul>
+    </aside>
+
+    <main class="content">
+        <h2>My Profile</h2>
+
+        <div class="profile-card">
+            <p><strong>Full Name:</strong> <span id="fullName"></span></p>
+            <p><strong>Email:</strong> <span id="email"></span></p>
+            <p><strong>Joined:</strong> <span id="joined"></span></p>
+            <button onclick="editProfile()">Edit Profile</button>
+        </div>
+    </main>
+
+</div>
+
+<script>
+async function ensureSession(){
+    try{
+        const res = await fetch("api/me.php",{credentials:"include"});
+        const data = await res.json();
+        if(!data.ok){ window.location.href = "login.html"; return null; }
+        return data.user;
+    }catch(e){
+        window.location.href = "login.html";
+        return null;
+    }
+}
+function editProfile(){
+    const nameEl = document.getElementById("fullName");
+    const emailEl = document.getElementById("email");
+    const name = prompt("Edit Full Name:", nameEl.textContent);
+    const email = prompt("Edit Email:", emailEl.textContent);
+    if(name && email){
+        nameEl.textContent = name;
+        emailEl.textContent = email;
+    }
+}
+async function loadProfile(){
+    const user = await ensureSession();
+    if(!user) return;
+    document.getElementById("fullName").textContent = user.name;
+    document.getElementById("email").textContent = user.email;
+    document.getElementById("joined").textContent = user.created_at ? String(user.created_at).slice(0,10) : "";
+}
+document.getElementById("logout").addEventListener("click", async function(e){
+    e.preventDefault();
+    try{ await fetch("api/logout.php",{credentials:"include"});}catch(e){}
+    window.location.href = "login.html";
+});
+loadProfile();
+</script>
+
+</body>
+</html>

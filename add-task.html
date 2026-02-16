@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Task | Task Management System</title>
+    
+    <style>
+        /* Reset & font */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f4f6f8;
+}
+
+/* Top Bar */
+.topbar {
+    background: #1e3c72;
+    color: white;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logout {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Dashboard Layout */
+.dashboard {
+    display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 220px;
+    background: #2a5298;
+    min-height: 100vh;
+}
+
+.sidebar ul {
+    list-style: none;
+    padding: 20px;
+}
+
+.sidebar li {
+    padding: 15px;
+    color: white;
+}
+
+.sidebar li a {
+    color: white;
+    text-decoration: none;
+}
+
+.sidebar li:hover,
+.sidebar .active {
+    background: rgba(255,255,255,0.2);
+}
+
+/* Main Content */
+.content {
+    flex: 1;
+    padding: 30px;
+}
+
+.content h2, .content h3 {
+    margin-bottom: 20px;
+}
+
+/* Form Styling */
+form {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Form Button */
+form button {
+    width: 100%;
+    padding: 12px;
+    background: #1e3c72;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+form button:hover {
+    background: #16325c;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+}
+
+th {
+    background: #1e3c72;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f2f2f2;
+}
+
+/* Status Colors */
+.pending {
+    color: orange;
+    font-weight: bold;
+}
+
+.completed {
+    color: green;
+    font-weight: bold;
+}
+
+/* Buttons inside table */
+.btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.edit {
+    background: #1e3c72;
+    margin-right: 5px;
+}
+
+.delete {
+    background: #c0392b;
+}
+
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <header class="topbar">
+        <h1>Task Management System</h1>
+        <a href="#" id="logout" class="logout">Logout</a>
+    </header>
+
+    <div class="dashboard">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="tasks.html">My Tasks</a></li>
+                <li class="active">Add Task</li>
+                <li><a href="complete.html">Completed Tasks</a></li>
+                <li><a href="profile.html">Profile</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <h2>Add New Task</h2>
+
+            <form id="taskForm">
+                <div class="input-group">
+                    <label>Task Name</label>
+                    <input type="text" id="taskName" placeholder="Enter task name" required>
+                </div>
+                <div class="input-group">
+                    <label>Status</label>
+                    <select id="taskStatus" required>
+                        <option value="Pending">Pending</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Priority</label>
+                    <select id="taskPriority" required>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Due Date</label>
+                    <input type="date" id="taskDue" required>
+                </div>
+                <button type="submit">Add Task</button>
+            </form>
+
+            <h3>Task List</h3>
+            <table id="taskTable">
+                <tr>
+                    <th>#</th>
+                    <th>Task Name</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th>Action</th>
+                </tr>
+            </table>
+        </main>
+
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        const taskForm = document.getElementById("taskForm");
+        const taskTable = document.getElementById("taskTable");
+        let taskCount = 0;
+        async function ensureSession(){
+            try{
+                const res = await fetch("api/me.php",{credentials:"include"});
+                const data = await res.json();
+                if(!data.ok){ window.location.href = "login.html"; return null; }
+                return data.user;
+            }catch(e){
+                window.location.href = "login.html";
+                return null;
+            }
+        }
+        function addRow(task){
+            taskCount++;
+            const row = taskTable.insertRow();
+            row.dataset.id = task.id;
+            const statusClass = String(task.status).toLowerCase()==="completed" ? "completed" : "pending";
+            row.innerHTML = `
+                <td>${taskCount}</td>
+                <td>${task.name}</td>
+                <td class="${statusClass}">${task.status}</td>
+                <td>${task.priority||""}</td>
+                <td>${task.due_date||""}</td>
+                <td>
+                    <button class="btn edit" onclick="onEdit(this)">Edit</button>
+                    <button class="btn delete" onclick="onDelete(this)">Delete</button>
+                </td>
+            `;
+        }
+        async function loadTasks(){
+            const user = await ensureSession();
+            if(!user) return;
+            try{
+                const res = await fetch("api/tasks.php",{credentials:"include"});
+                const data = await res.json();
+                if(data.ok){
+                    data.tasks.reverse().forEach(t=>addRow(t));
+                }
+            }catch(e){}
+        }
+        taskForm.addEventListener("submit", async function(e){
+            e.preventDefault();
+            const name = document.getElementById("taskName").value.trim();
+            const status = document.getElementById("taskStatus").value;
+            const priority = document.getElementById("taskPriority").value;
+            const due = document.getElementById("taskDue").value;
+            const body = new URLSearchParams();
+            body.append("name", name);
+            body.append("status", status);
+            body.append("priority", priority);
+            body.append("due_date", due);
+            try{
+                const res = await fetch("api/tasks.php",{method:"POST", body, credentials:"include"});
+                const data = await res.json();
+                if(data.ok){
+                    addRow(data.task);
+                    taskForm.reset();
+                }else{
+                    alert("Failed to add task");
+                }
+            }catch(e){
+                alert("Network error");
+            }
+        });
+        window.onEdit = async function(button){
+            const row = button.parentElement.parentElement;
+            const cells = row.getElementsByTagName("td");
+            const id = row.dataset.id;
+            const taskName = prompt("Edit Task Name:", cells[1].innerText);
+            const status = prompt("Edit Status (Pending or Completed):", cells[2].innerText);
+            const priority = prompt("Edit Priority (High, Medium, Low):", cells[3].innerText);
+            const dueDate = prompt("Edit Due Date (YYYY-MM-DD):", cells[4].innerText);
+            if(!(taskName && status && priority)) return;
+            const payload = {id:Number(id), name: taskName, status, priority, due_date: dueDate||null};
+            try{
+                const res = await fetch("api/tasks.php",{method:"PUT", body: JSON.stringify(payload), credentials:"include"});
+                const data = await res.json();
+                if(data.ok){
+                    cells[1].innerText = data.task.name;
+                    cells[2].innerText = data.task.status;
+                    cells[2].className = String(data.task.status).toLowerCase()==="completed" ? "completed" : "pending";
+                    cells[3].innerText = data.task.priority || "";
+                    cells[4].innerText = data.task.due_date || "";
+                }
+            }catch(e){}
+        }
+        window.onDelete = async function(button){
+            const row = button.parentElement.parentElement;
+            const id = row.dataset.id;
+            if(!confirm("Delete this task?")) return;
+            try{
+                const res = await fetch("api/tasks.php?id="+encodeURIComponent(id),{method:"DELETE", credentials:"include"});
+                const data = await res.json();
+                if(data.ok){
+                    row.remove();
+                    const rows = taskTable.rows;
+                    taskCount = 0;
+                    for(let i=1;i<rows.length;i++){ rows[i].cells[0].innerText = i; taskCount=i; }
+                }
+            }catch(e){}
+        }
+        document.getElementById("logout").addEventListener("click", async function(e){
+            e.preventDefault();
+            try{ await fetch("api/logout.php",{credentials:"include"});}catch(e){}
+            window.location.href = "login.html";
+        });
+        loadTasks();
+    </script>
+
+</body>
+</html>
